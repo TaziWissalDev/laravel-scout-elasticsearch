@@ -7,7 +7,7 @@ namespace Matchish\ScoutElasticSearch;
 use Elastic\Elasticsearch\Client;
 use Elastic\Elasticsearch\ClientBuilder;
 use Illuminate\Support\ServiceProvider;
-use Matchish\ScoutElasticSearch\ElasticSearch\Config\Config;
+use Illuminate\Support\Facades\Config;
 use Matchish\ScoutElasticSearch\ElasticSearch\EloquentHitsIteratorAggregate;
 use Matchish\ScoutElasticSearch\ElasticSearch\HitsIteratorAggregate;
 use Aws\ElasticsearchService\ElasticsearchPhpHandler;
