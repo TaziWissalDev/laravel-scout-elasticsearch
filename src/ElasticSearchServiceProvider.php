@@ -10,6 +10,9 @@ use Illuminate\Support\ServiceProvider;
 use Matchish\ScoutElasticSearch\ElasticSearch\Config\Config;
 use Matchish\ScoutElasticSearch\ElasticSearch\EloquentHitsIteratorAggregate;
 use Matchish\ScoutElasticSearch\ElasticSearch\HitsIteratorAggregate;
+use Aws\ElasticsearchService\ElasticsearchPhpHandler;
+use Aws\Credentials\CredentialProvider;
+
 
 final class ElasticSearchServiceProvider extends ServiceProvider
 {
@@ -21,7 +24,19 @@ final class ElasticSearchServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/elasticsearch.php', 'elasticsearch');
 
         $this->app->bind(Client::class, function () {
+
+            $aws_enabled = Config::get('elasticscout.connection.hosts.0.aws_enable');
+            $hosts = [config('elasticsearch.host')];
+
             $clientBuilder = ClientBuilder::create()->setHosts(Config::hosts());
+
+            if ($aws_enabled) {
+                $hosts = [Config::get('elasticscout.connection.hosts.0.host') . ':' . Config::get('elasticscout.connection.hosts.0.port')];
+                $provider = CredentialProvider::defaultProvider();
+                $handler = new ElasticsearchPhpHandler('eu-west-3', $provider);
+                $client->setHandler($handler);
+            }
+
             if ($user = Config::user()) {
                 $clientBuilder->setBasicAuthentication($user, Config::password());
             }
@@ -30,6 +45,8 @@ final class ElasticSearchServiceProvider extends ServiceProvider
                 $clientBuilder->setElasticCloudId($cloudId)
                     ->setApiKey(Config::apiKey());
             }
+
+            $client->setHosts($hosts);
 
             return $clientBuilder->build();
         });
@@ -47,6 +64,10 @@ final class ElasticSearchServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__.'/../config/elasticsearch.php' => config_path('elasticsearch.php'),
+        ], 'config');
+
+        $this->publishes([
+            __DIR__.'/../config/elasticscout.php' => config_path('elasticscout.php'),
         ], 'config');
     }
 
