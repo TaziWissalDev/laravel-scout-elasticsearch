@@ -12,6 +12,8 @@ use Matchish\ScoutElasticSearch\ElasticSearch\EloquentHitsIteratorAggregate;
 use Matchish\ScoutElasticSearch\ElasticSearch\HitsIteratorAggregate;
 use Aws\ElasticsearchService\ElasticsearchPhpHandler;
 use Aws\Credentials\CredentialProvider;
+use Matchish\ScoutElasticSearch\ElasticSearch\Config\Config as esConfig;
+
 
 
 final class ElasticSearchServiceProvider extends ServiceProvider
@@ -28,25 +30,25 @@ final class ElasticSearchServiceProvider extends ServiceProvider
             $aws_enabled = Config::get('elasticscout.connection.hosts.0.aws_enable');
             $hosts = [config('elasticsearch.host')];
 
-            $clientBuilder = ClientBuilder::create()->setHosts(Config::hosts());
+            $clientBuilder = ClientBuilder::create();
 
             if ($aws_enabled) {
                 $hosts = [Config::get('elasticscout.connection.hosts.0.host') . ':' . Config::get('elasticscout.connection.hosts.0.port')];
                 $provider = CredentialProvider::defaultProvider();
                 $handler = new ElasticsearchPhpHandler('eu-west-3', $provider);
-                $client->setHandler($handler);
+                $clientBuilder->setHandler($handler);
+                $clientBuilder->setHosts($hosts);
             }
 
-            if ($user = Config::user()) {
-                $clientBuilder->setBasicAuthentication($user, Config::password());
+            if ($user = esConfig::user()) {
+                $clientBuilder->setBasicAuthentication($user, esConfig::password());
             }
 
-            if ($cloudId = Config::elasticCloudId()) {
+            if ($cloudId = esConfig::elasticCloudId()) {
                 $clientBuilder->setElasticCloudId($cloudId)
-                    ->setApiKey(Config::apiKey());
+                    ->setApiKey(esConfig::apiKey());
             }
 
-            $client->setHosts($hosts);
 
             return $clientBuilder->build();
         });
