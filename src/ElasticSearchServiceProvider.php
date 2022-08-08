@@ -13,6 +13,8 @@ use Matchish\ScoutElasticSearch\ElasticSearch\HitsIteratorAggregate;
 use Aws\ElasticsearchService\ElasticsearchPhpHandler;
 use Aws\Credentials\CredentialProvider;
 use Matchish\ScoutElasticSearch\ElasticSearch\Config\Config as esConfig;
+use Aws\Signature\SignatureV4;
+use Wizacha\Middleware\AwsSignatureMiddleware;
 
 
 
@@ -23,7 +25,7 @@ final class ElasticSearchServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/elasticsearch.php', 'elasticsearch');
+        $this->mergeConfigFrom(__DIR__ . '/../config/elasticsearch.php', 'elasticsearch');
 
         $this->app->bind(Client::class, function () {
 
@@ -33,10 +35,15 @@ final class ElasticSearchServiceProvider extends ServiceProvider
             $clientBuilder = ClientBuilder::create();
 
             if ($aws_enabled) {
-                $hosts = [Config::get('elasticscout.connection.hosts.0.host') . ':' . Config::get('elasticscout.connection.hosts.0.port')];
+                $signature = new SignatureV4('es', 'eu-west-1');
                 $provider = CredentialProvider::defaultProvider();
-                $handler = new ElasticsearchPhpHandler('eu-west-3', $provider);
-                $clientBuilder->setHandler($handler);
+
+                $middleware = new AwsSignatureMiddleware($provider, $signature);
+                $hosts = [Config::get('elasticscout.connection.hosts.0.host') . ':' . Config::get('elasticscout.connection.hosts.0.port')];
+                $defaultHandler = ClientBuilder::defaultHandler();
+                $awsHandler = $middleware($defaultHandler);
+                // $handler = new ElasticsearchPhpHandler('eu-west-3', $provider);
+                $clientBuilder->setHandler($awsHandler);
                 $clientBuilder->setHosts($hosts);
             }
 
@@ -65,11 +72,11 @@ final class ElasticSearchServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__.'/../config/elasticsearch.php' => config_path('elasticsearch.php'),
+            __DIR__ . '/../config/elasticsearch.php' => config_path('elasticsearch.php'),
         ], 'config');
 
         $this->publishes([
-            __DIR__.'/../config/elasticscout.php' => config_path('elasticscout.php'),
+            __DIR__ . '/../config/elasticscout.php' => config_path('elasticscout.php'),
         ], 'config');
     }
 
