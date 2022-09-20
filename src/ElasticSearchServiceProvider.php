@@ -29,9 +29,9 @@ final class ElasticSearchServiceProvider extends ServiceProvider
 
             $aws_enabled = Config::get('elasticscout.connection.hosts.0.aws_enable');
             $hosts = [config('elasticsearch.host')];
-            $hosts = [Config::get('elasticscout.connection.hosts.0.host') . ':' . Config::get('elasticscout.connection.hosts.0.port')];
-
-            $clientBuilder = ClientBuilder::create()->setHosts($hosts);
+            // $hosts = [Config::get('elasticscout.connection.hosts.0.host') . ':' . Config::get('elasticscout.connection.hosts.0.port')];
+            $clientBuilder = ClientBuilder::create()->setHosts([esConfig::hosts()[0].':443']); //dump(esConfig::user());
+            // $clientBuilder = ClientBuilder::create()->setHosts($hosts);
 
             if ($aws_enabled) {
                 $hosts = [Config::get('elasticscout.connection.hosts.0.host') . ':' . Config::get('elasticscout.connection.hosts.0.port')];
